@@ -5,9 +5,13 @@
 #define MAX_CREDENTIALS 100
 #define MAX_ACCOUNTS 100
 #define MAX_NAME_LENGTH 50
+#define MAX_TRANSACTIONS 100
+
+// logi
 
 // Data structures
-typedef struct {
+typedef struct
+{
     char firstName[MAX_NAME_LENGTH];
     char lastName[MAX_NAME_LENGTH];
     char email[MAX_NAME_LENGTH];
@@ -18,205 +22,172 @@ typedef struct {
     int role; // 0 for bank employee, 1 for customer
 } User;
 
-
-typedef struct {
+typedef struct
+{
     char accountHolder[MAX_NAME_LENGTH];
     double balance;
+    char transactions[MAX_TRANSACTIONS][MAX_NAME_LENGTH]; // Array to store transaction history
+    int numTransactions;                                  // Counter to keep track of transactions
 } Account;
 
 // Function prototypes
-void displayMenu(int role);
-void login(User *users, int *currentUser);
-void createUser(User *users, int *numUsers);
-void deposit(Account *accounts, int numAccounts);
-void withdraw(Account *accounts, int numAccounts);
-void viewBalance(Account *accounts, int numAccounts);
+void displayMenu(User *users, int currentUser, Account *accounts, int *numAccounts, int *numUsers);
+
+int login(User *users, int *currentUser, Account *accounts, int *numAccounts);
+
+void createUser(User *users, int *numAccounts, Account *accounts);
+void deposit(Account *accounts, int numAccounts, User currentUser);
+void withdraw(Account *accounts, int numAccounts, int currentUser, double amount);
+void viewBalance(Account *accounts, int numAccounts, int currentUser);
 void accountSearch(Account *accounts, int numAccounts);
-void saveAccountData(User *users, int numUsers, const char *filename);
-void loadAccountData(Account *accounts, int *numAccounts, const char *filename);
+// Function prototypes for account info
+void saveAccountData(Account *accounts, int numAccounts);
+void loadAccountData(Account *accounts, int *numAccounts);
+// Function prototypes for user data
+void saveUserData(User *users, int numUsers);
+void loadUserData(User *users, int *numUsers);
 
-// Admin-specific functionalities (placeholders)
-void addCustomer(Account *accounts, int *numAccounts);
-void removeCustomer(Account *accounts, int *numAccounts);
-void sortAccounts(Account *accounts, int numAccounts);
+// Admin-specific functionalities ()
+void viewCustomer(Account *accounts, int numAccounts);
+void addCustomer();
+void removeCustomer();
+void sortAccounts();
 
-int main() {
+int main()
+{
     User users[MAX_CREDENTIALS];
     Account accounts[MAX_ACCOUNTS];
+
+    int currentUser = -1;
     int numAccounts = 0;
-    int currentUser = -1; // -1 indicates no user logged in
+    int numUsers = 0;
 
-    // Load data from file (if available)
-    loadAccountData(accounts, &numAccounts, "account_data.txt");
-
-    // Initialize some dummy data (you can replace this with file I/O)
-    strcpy(users[0].username, "employee");
-    strcpy(users[0].password, "password");
-    users[0].role = 0; // bank employee
+    // Load user data at the start
+    loadUserData(users, &numUsers);
+    // Load account data at the start
+    loadAccountData(accounts, &numAccounts);
 
     // Main program loop
     int choice;
     char yn;
-    do {
-        printf("------JAK Bank------\n");
+    do
+    {
+        printf("\n------------JAK Bank------------\n");
+        puts("");
         printf("Do you have an account? (y/n):");
-        scanf("%c", &yn);
-        
-        switch (yn){
-        case 'y':
+        scanf(" %c", &yn);
 
-            printf("1. Login as User\n2. Login as Admin\n3. Exit\n ");
-            printf("___________\n");
+        switch (yn)
+        {
+        case 'y':
+            printf("1. Login as User\n2. Login as Admin\n3. Exit\n");
+            printf("--------------------------------\n");
             printf("\nEnter your choice:");
             scanf("%d", &choice);
 
-            switch (choice) {
-                case 1:
-                    login(users, &currentUser);
-                    saveAccountData(accounts, numAccounts, "account_data.txt");
-
-                    break;
-                case 2:
-                    login(users, &currentUser); // Admin login (for simplicity, using the same function)
-                    if (currentUser != -1 && users[currentUser].role != 0) {
-                        printf("Invalid credentials. Logging out.\n");
-                        currentUser = -1;
-                    }
-                    saveAccountData(accounts, numAccounts, "account_data.txt");
-
-                    break;
-                case 3:
-                    // Save data to file before exiting
-                    saveAccountData(accounts, numAccounts, "account_data.txt");
-                    printf("Exiting program.\n");
-                    break;
-                default:
-                    printf("Invalid choice. Try again.\n");
-            }
-            break;
-        
-        case 'n':
-        // User does not have an account
-                printf("\nWould you like to create one (y/n):");
-                char response2;
-                scanf(" %c", &response2);
-                switch (response2)
+            switch (choice)
+            {
+            case 1:
+                // login(users, &currentUser, &accounts, &numAccounts);
+                if (login(users, &currentUser, &accounts, &numAccounts) == 1)
                 {
-                case 'n':
-                    printf("Okay, Goodbye!");
-                    return 0;
-
-                case 'y':
-                    createUser(users, &numAccounts);
-                    break;
-                
+                    printf("Login successful. Welcome, %s!\n", &users[currentUser].username);
+                    displayMenu(users, currentUser, accounts, &numAccounts, &numUsers);
                 }
                 break;
+
+            case 2:
+                login(users, &currentUser, &accounts, &numAccounts);
+                if (currentUser != -1 && users[currentUser].role != 0)
+                {
+                    printf("Invalid credentials. Logging out. \n");
+                    currentUser = -1;
+                }
+                displayMenu(users, currentUser, accounts, &numAccounts, &numUsers);
+                break;
+
+            case 3:
+
+                break;
+            default:
+                printf("Invalid choice. Try again.\n");
+            }
+            break;
+
+        case 'n':
+            // User does not have an account
+            printf("\nWould you like to create one (y/n):");
+            char response2;
+            scanf(" %c", &response2);
+            puts("");
+
+            switch (response2)
+            {
+
+            case 'y':
+                createUser(users, &numAccounts, accounts);
+                break;
+
+            case 'n':
+                printf("Okay, Goodbye!");
+                return 0;
+
+            default:
+                printf("Invalid choice. Try again.\n");
+            }
+            break;
 
         default:
             printf("Invalid choice. Try again.\n");
             break;
         }
-
-        if (currentUser != -1) {
-            // If a user is logged in, show the user-specific menu
-            do {
-                displayMenu(users[currentUser].role);
-                printf("Enter your choice: ");
-                scanf("%d", &choice);
-
-                switch (choice) {
-                    // User and admin functionalities
-                    case 1:
-                        if (users[currentUser].role == 0) {
-                            deposit(accounts, numAccounts);
-                        } else {
-                            // Admin-specific functionality (e.g., view customer info)
-                            viewBalance(accounts, numAccounts);
-                        }
-                        break;
-                    case 2:
-                        if (users[currentUser].role == 0) {
-                            withdraw(accounts, numAccounts);
-                        } else {
-                            // Admin-specific functionality (e.g., add customer)
-                            addCustomer(accounts, &numAccounts);
-                        }
-                        break;
-                    case 3:
-                        viewBalance(accounts, numAccounts);
-                        break;
-                    case 4:
-                        if (users[currentUser].role == 0) {
-                            printf("Invalid choice. Try again.\n");
-                        } else {
-                            // Admin-specific functionality (e.g., remove customer)
-                            removeCustomer(accounts, &numAccounts);
-                        }
-                        break;
-                    case 5:
-                        if (users[currentUser].role == 0) {
-                            printf("Invalid choice. Try again.\n");
-                        } else {
-                            // Admin-specific functionality (e.g., sort)
-                            sortAccounts(accounts, numAccounts);
-                        }
-                        break;
-                    case 6:
-                        // Logout
-                        currentUser = -1;
-                        printf("Logged out.\n");
-                        break;
-                    default:
-                        printf("Invalid choice. Try again.\n");
-                }
-            } while (choice != 6);
-        }
-    } while (choice != 4);
-
-    return 0;
+    } while (1); // Loop until explicitly exited
 }
 
-
-// Function definitions
-
-void displayMenu(int role) {
-    if (role == 0) {
-        // Bank employee menu
-        printf("1. Deposit\n2. Withdraw\n3. View Balance\n4. Account Search\n5. Create User\n6. Logout\n");
-    } else {
-        // Customer menu
-        printf("1. Deposit\n2. Withdraw\n3. View Balance\n4. Logout\n");
-    }
-}
-
-
-void login(User *users, int *currentUser) {
+int login(User *users, int *currentUser, Account *accounts, int *numAccounts)
+{
     char username[MAX_NAME_LENGTH];
     char password[MAX_NAME_LENGTH];
-    printf("Enter username: ");
+
+    printf("\nEnter username: ");
     scanf("%s", username);
+
+    // Clear input buffer
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF)
+        ;
+
     printf("Enter password: ");
     scanf("%s", password);
 
-    for (int i = 0; i < MAX_CREDENTIALS; i++) {
-        if (strcmp(users[i].username, username) == 0 && strcmp(users[i].password, password) == 0) {
+    // Clear input buffer again
+    while ((c = getchar()) != '\n' && c != EOF)
+        ;
+
+    for (int i = 0; i < MAX_CREDENTIALS; i++)
+    {
+        if (strcmp(users[i].username, username) == 0 && strcmp(users[i].password, password) == 0)
+        {
             *currentUser = i;
-            printf("Login successful. Welcome, %s!\n", username);
-            return;
+
+            // printf("Login successful. Welcome, %s!\n", username);
+            return 1;
         }
     }
 
-    printf("Login failed. Invalid username or password.\n");
+    printf("\nLogin failed. Invalid username or password.\n");
+    return 0;
 }
 
-void createUser(User *users, int *numUsers) {
-    if (*numUsers < MAX_CREDENTIALS) {
+void createUser(User *users, int *numUsers, Account *accounts)
+{
+    if (*numUsers < MAX_CREDENTIALS)
+    {
         printf("Enter first name: ");
         getchar(); // Clear the input buffer
         fgets(users[*numUsers].firstName, MAX_NAME_LENGTH, stdin);
         users[*numUsers].firstName[strcspn(users[*numUsers].firstName, "\n")] = '\0'; // Remove the newline character
-        
+
         printf("Enter last name: ");
         fgets(users[*numUsers].lastName, MAX_NAME_LENGTH, stdin);
         users[*numUsers].lastName[strcspn(users[*numUsers].lastName, "\n")] = '\0'; // Remove the newline character
@@ -237,8 +208,10 @@ void createUser(User *users, int *numUsers) {
         scanf("%s", users[*numUsers].username);
 
         // Check if the username already exists
-        for (int i = 0; i < *numUsers; i++) {
-            if (strcmp(users[i].username, users[*numUsers].username) == 0) {
+        for (int i = 0; i < *numUsers; i++)
+        {
+            if (strcmp(users[i].username, users[*numUsers].username) == 0)
+            {
                 printf("Username already exists. Please choose a different username.\n");
                 return;
             }
@@ -248,7 +221,33 @@ void createUser(User *users, int *numUsers) {
         scanf("%s", users[*numUsers].password);
 
         printf("Enter user role (0 for bank employee, 1 for customer): ");
-        scanf("%d", &users[*numUsers].role);
+        int role;
+        while (1)
+        {
+            if (scanf("%d", &role) == 1)
+            {
+                if (role == 0 || role == 1)
+                {
+                    break; // Valid input, exit the loop
+                }
+                else
+                {
+                    printf("Invalid input. Please enter 0 for bank employee or 1 for customer: ");
+                }
+            }
+            else
+            {
+                printf("Invalid input. Please enter a number: ");
+                while (getchar() != '\n')
+                    ; // Clear the invalid input from the buffer
+            }
+        }
+
+        users[*numUsers].role = role;
+
+        strcpy(accounts[*numUsers].accountHolder, users[*numUsers].username);
+        accounts[*numUsers].balance = 0.0;
+        accounts[*numUsers].numTransactions = 0;
 
         (*numUsers)++;
         printf("Account created with the following details:\n");
@@ -256,180 +255,357 @@ void createUser(User *users, int *numUsers) {
         printf("Address: %s\n", users[*numUsers - 1].address);
         printf("SSN: %s\n", users[*numUsers - 1].socialSecurityNumber);
         printf("Email: %s\n", users[*numUsers - 1].email);
-    } else {
+
+        saveAccountData(users, *numUsers);
+        saveUserData(users, *numUsers);
+    }
+    else
+    {
         printf("Maximum number of users reached.\n");
     }
 }
 
-void deposit(Account *accounts, int numAccounts) {
-    // Implement the logic to deposit money
-    char accountHolder[MAX_NAME_LENGTH];
-    double amount;
-    printf("Enter your account holder name: ");
-    scanf("%s", accountHolder);
+void displayMenu(User *users, int currentUser, Account *accounts, int *numAccounts, int *numUsers)
+{
+    int choice;
 
-    for (int i = 0; i < numAccounts; i++) {
-        if (strcmp(accounts[i].accountHolder, accountHolder) == 0) {
-            printf("Enter the amount to deposit: ");
-            scanf("%lf", &amount);
+    switch (users[currentUser].role)
+    {
+    case 1:
+        do
+        {
+            printf("\nCustomer Menu:\n");
+            printf("1. Deposit\n");
+            printf("2. Withdraw\n");
+            printf("3. View Balance\n");
+            printf("4. View Transactions\n");
+            printf("0. Exit\n");
+            printf("Enter your choice: ");
+            scanf("%d", &choice);
+
+            switch (choice)
+            {
+            case 1:
+                deposit(accounts, *numAccounts, users[currentUser]);
+                break;
+            case 2:
+            {
+                double amount;
+                printf("Enter the amount to withdraw: ");
+                scanf("%lf", &amount);
+                withdraw(accounts, *numAccounts, currentUser, amount);
+            }
+            break;
+            case 3:
+                viewBalance(accounts, *numAccounts, currentUser);
+                break;
+            case 4:
+            {
+                printf("Transaction History:\n");
+                for (int i = 0; i < accounts[currentUser].numTransactions; ++i)
+                {
+                    printf("%d. %s\n", i + 1, accounts[currentUser].transactions[i]);
+                }
+            }
+            break;
+            case 0:
+                printf("Exiting customer menu.\n");
+                break;
+            default:
+                printf("Invalid choice. Please try again.\n");
+                break;
+            }
+        } while (choice != 0);
+        break;
+
+    case 0:
+        do
+        {
+            printf("\nAdmin Menu:\n");
+            printf("1. View Customer Info\n");
+            printf("2. Add Customer\n");
+            printf("3. Remove Customer\n");
+            printf("4. Sort Accounts\n");
+            printf("0. Exit\n");
+            printf("Enter your choice: ");
+            scanf("%d", &choice);
+
+            switch (choice)
+            {
+            case 1:
+                viewCustomer(accounts, *numAccounts); // Implement the view customer info function or its logic
+                break;
+            case 2:
+                addCustomer(users, numUsers, accounts, numAccounts); // Call the addCustomer function
+                break;
+            case 3:
+                removeCustomer(users, numUsers, accounts, numAccounts); // Call the removeCustomer function
+                break;
+            case 4:
+                sortAccounts(accounts, *numAccounts); // Call the sortAccounts function
+                break;
+            case 0:
+                printf("Exiting admin menu.\n");
+                break;
+            default:
+                printf("Invalid choice. Please try again.\n");
+                break;
+            }
+        } while (choice != 0);
+        break;
+
+    default:
+        printf("Invalid role.\n");
+        break;
+    }
+}
+
+void deposit(Account *accounts, int numAccounts, User currentUser)
+{
+    double amount;
+    printf("Enter the amount to deposit: ");
+    scanf("%lf", &amount);
+
+    for (int i = 0; i < numAccounts; i++)
+    {
+        if (strcmp(accounts[i].accountHolder, currentUser.username) == 0)
+        {
             accounts[i].balance += amount;
             printf("Deposit successful. New balance: %.2f\n", accounts[i].balance);
+
+            // Format the transaction string and update the history for deposits
+            sprintf(accounts[i].transactions[accounts[i].numTransactions], "Deposit: %.2f", amount);
+            accounts[i].numTransactions++;
             return;
         }
     }
-
-    printf("Account not found.\n");
 }
 
-void withdraw(Account *accounts, int numAccounts) {
-    // Implement the logic to withdraw money
-    char accountHolder[MAX_NAME_LENGTH];
-    double amount;
-    printf("Enter your account holder name: ");
-    scanf("%s", accountHolder);
+void withdraw(Account *accounts, int numAccounts, int currentUser, double amount)
+{
+    if (currentUser >= 0 && currentUser < numAccounts)
+    {
+        if (amount <= accounts[currentUser].balance)
+        {
+            accounts[currentUser].balance -= amount;
+            printf("Withdrawal successful. New balance: %.2f\n", accounts[currentUser].balance);
 
-    for (int i = 0; i < numAccounts; i++) {
-        if (strcmp(accounts[i].accountHolder, accountHolder) == 0) {
-            printf("Enter the amount to withdraw: ");
-            scanf("%lf", &amount);
-            if (amount <= accounts[i].balance) {
-                accounts[i].balance -= amount;
-                printf("Withdrawal successful. New balance: %.2f\n", accounts[i].balance);
-            } else {
-                printf("Insufficient funds.\n");
+            // Check if there's space in the transaction history
+            if (accounts[currentUser].numTransactions < MAX_TRANSACTIONS)
+            {
+                // Format the transaction string and update the history for withdrawals
+                sprintf(accounts[currentUser].transactions[accounts[currentUser].numTransactions], "Withdrawal: %.2f", amount);
+                accounts[currentUser].numTransactions++;
             }
-            return;
+            else
+            {
+                printf("Transaction history is full. Unable to record withdrawal.\n");
+            }
+        }
+        else
+        {
+            printf("Insufficient funds.\n");
+        }
+    }
+    else
+    {
+        printf("Invalid user account.\n");
+    }
+}
+
+void viewBalance(Account *accounts, int numAccounts, int currentUser)
+{
+    if (currentUser >= 0 && currentUser < numAccounts)
+    {
+        printf("Account Holder: %s, \nBalance: %.2f\n", accounts[currentUser].accountHolder, accounts[currentUser].balance);
+    }
+    else
+    {
+        printf("Invalid user account.\n");
+    }
+}
+
+void viewCustomer(Account *accounts, int numAccounts)
+{
+    char searchUsername[MAX_NAME_LENGTH];
+    printf("Enter the username of the customer to view: ");
+    scanf("%s", searchUsername);
+
+    int found = 0;
+
+    for (int i = 0; i < numAccounts; i++)
+    {
+        if (strcmp(accounts[i].accountHolder, searchUsername) == 0)
+        {
+            found = 1;
+
+            // Display account information
+            printf("Account Holder: %s\n", accounts[i].accountHolder);
+            printf("Balance: %.2f\n", accounts[i].balance);
+
+            // Display transaction history
+            printf("Transaction History:\n");
+            for (int j = 0; j < accounts[i].numTransactions; ++j)
+            {
+                printf("%d. %s\n", j + 1, accounts[i].transactions[j]);
+            }
+
+            break; // No need to continue searching
         }
     }
 
-    printf("Account not found.\n");
+    if (!found)
+    {
+        printf("Account with username %s not found.\n", searchUsername);
+    }
 }
 
-void viewBalance(Account *accounts, int numAccounts) {
-    // Implement the logic to view account balance
-    char accountHolder[MAX_NAME_LENGTH];
-    printf("Enter your account holder name: ");
-    scanf("%s", accountHolder);
+// Function to add a new customer
+void addCustomer(User *users, int *numUsers, Account *accounts, int *numAccounts)
+{
+    if (*numUsers < MAX_CREDENTIALS && *numAccounts < MAX_ACCOUNTS)
+    {
+        // Input user details
+        printf("Enter first name: ");
+        getchar();
+        fgets(users[*numUsers].firstName, MAX_NAME_LENGTH, stdin);
+        users[*numUsers].firstName[strcspn(users[*numUsers].firstName, "\n")] = '\0';
 
-    for (int i = 0; i < numAccounts; i++) {
-        if (strcmp(accounts[i].accountHolder, accountHolder) == 0) {
-            printf("Account Holder: %s, Balance: %.2f\n", accounts[i].accountHolder, accounts[i].balance);
-            return;
+        printf("Enter last name: ");
+        fgets(users[*numUsers].lastName, MAX_NAME_LENGTH, stdin);
+        users[*numUsers].lastName[strcspn(users[*numUsers].lastName, "\n")] = '\0';
+
+        // ... (similarly input other details)
+
+        printf("Enter new username: ");
+        scanf("%s", users[*numUsers].username);
+
+        // Check if the username already exists
+        for (int i = 0; i < *numUsers; i++)
+        {
+            if (strcmp(users[i].username, users[*numUsers].username) == 0)
+            {
+                printf("Username already exists. Please choose a different username.\n");
+                return;
+            }
         }
-    }
 
-    printf("Account not found.\n");
-}
+        printf("Enter new password: ");
+        scanf("%s", users[*numUsers].password);
 
-void accountSearch(Account *accounts, int numAccounts) {
-    // Implement the logic for account search
-    char accountHolder[MAX_NAME_LENGTH];
-    printf("Enter the account holder name you want to search for: ");
-    scanf("%s", accountHolder);
-
-    for (int i = 0; i < numAccounts; i++) {
-        if (strcmp(accounts[i].accountHolder, accountHolder) == 0) {
-            printf("Account found:\n");
-            printf("Account Holder: %s, Balance: %.2f\n", accounts[i].accountHolder, accounts[i].balance);
-            return;
+        printf("Enter user role (0 for bank employee, 1 for customer): ");
+        int role;
+        while (1)
+        {
+            if (scanf("%d", &role) == 1)
+            {
+                if (role == 0 || role == 1)
+                {
+                    break; // Valid input, exit the loop
+                }
+                else
+                {
+                    printf("Invalid input. Please enter 0 for bank employee or 1 for customer: ");
+                }
+            }
+            else
+            {
+                printf("Invalid input. Please enter a number: ");
+                while (getchar() != '\n')
+                    ; // Clear the invalid input from the buffer
+            }
         }
-    }
 
-    printf("Account not found.\n");
-}
+        users[*numUsers].role = role;
 
-void saveAccountData(User *users, int numUsers, const char *filename) {
-    FILE *file = fopen(filename, "w");
-    if (file == NULL) {
-        printf("Error opening file for writing.\n");
-        return;
-    }
+        // Initialize account for the new user
+        strcpy(accounts[*numAccounts].accountHolder, users[*numUsers].username);
+        accounts[*numAccounts].balance = 0.0;
+        accounts[*numAccounts].numTransactions = 0;
 
-    for (int i = 0; i < numUsers; i++) {
-        fprintf(file, "%s %s %s %s %s %s %s %d\n", users[i].firstName, users[i].lastName, users[i].email,
-                users[i].socialSecurityNumber, users[i].address, users[i].username, users[i].password, users[i].role);
-    }
-
-    fclose(file);
-    printf("User data saved to %s.\n", filename);
-}
-
-void loadUserData(User *users, int *numUsers, const char *filename) {
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) {
-        printf("File not found. Starting with an empty dataset.\n");
-        return;
-    }
-
-    while (fscanf(file, "%s %s %s %s %s %s %s %d", users[*numUsers].firstName, users[*numUsers].lastName,
-                  users[*numUsers].email, users[*numUsers].socialSecurityNumber, users[*numUsers].address,
-                  users[*numUsers].username, users[*numUsers].password, &users[*numUsers].role) == 8) {
         (*numUsers)++;
-    }
-
-    fclose(file);
-    printf("User data loaded from %s.\n", filename);
-}
-
-
-void loadAccountData(Account *accounts, int *numAccounts, const char *filename) {
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) {
-        printf("File not found. Starting with an empty dataset.\n");
-        return;
-    }
-
-    while (fscanf(file, "%s %lf", accounts[*numAccounts].accountHolder, &accounts[*numAccounts].balance) == 2) {
         (*numAccounts)++;
-    }
 
-    fclose(file);
-    printf("Account data loaded from %s.\n", filename);
-}
-
-void addCustomer(Account *accounts, int *numAccounts) {
-    if (*numAccounts < MAX_ACCOUNTS) {
-        printf("Enter account holder name: ");
-        scanf("%s", accounts[*numAccounts].accountHolder);
-
-        printf("Enter initial balance: ");
-        scanf("%lf", &accounts[*numAccounts].balance);
-
-        (*numAccounts)++;
         printf("Customer added successfully.\n");
-    } else {
-        printf("Maximum number of accounts reached.\n");
+
+        // Save data to files
+        // ... (other save data calls)
+    }
+    else
+    {
+        printf("Maximum number of users/accounts reached.\n");
     }
 }
 
-void removeCustomer(Account *accounts, int *numAccounts) {
-    char accountHolder[MAX_NAME_LENGTH];
-    printf("Enter the account holder name to remove: ");
-    scanf("%s", accountHolder);
+// Function to remove a customer
+void removeCustomer(User *users, int *numUsers, Account *accounts, int *numAccounts)
+{
+    char usernameToRemove[MAX_NAME_LENGTH];
+    printf("Enter the username of the customer to remove: ");
+    scanf("%s", usernameToRemove);
 
-    for (int i = 0; i < *numAccounts; i++) {
-        if (strcmp(accounts[i].accountHolder, accountHolder) == 0) {
-            // Remove customer by shifting elements
-            for (int j = i; j < *numAccounts - 1; j++) {
-                strcpy(accounts[j].accountHolder, accounts[j + 1].accountHolder);
-                accounts[j].balance = accounts[j + 1].balance;
-            }
+    int userIndex = -1;
+    int accountIndex = -1;
 
-            (*numAccounts)--;
-            printf("Customer removed successfully.\n");
-            return;
+    // Find the user and corresponding account
+    for (int i = 0; i < *numUsers; i++)
+    {
+        if (strcmp(users[i].username, usernameToRemove) == 0)
+        {
+            userIndex = i;
+            break;
         }
     }
 
-    printf("Customer not found.\n");
+    for (int i = 0; i < *numAccounts; i++)
+    {
+        if (strcmp(accounts[i].accountHolder, usernameToRemove) == 0)
+        {
+            accountIndex = i;
+            break;
+        }
+    }
+
+    // If the user and account are found, remove them
+    if (userIndex != -1 && accountIndex != -1)
+    {
+        // Remove user
+        for (int i = userIndex; i < *numUsers - 1; i++)
+        {
+            users[i] = users[i + 1];
+        }
+
+        // Remove account
+        for (int i = accountIndex; i < *numAccounts - 1; i++)
+        {
+            accounts[i] = accounts[i + 1];
+        }
+
+        (*numUsers)--;
+        (*numAccounts)--;
+
+        printf("Customer removed successfully.\n");
+
+        // Save data to files
+        saveAccountData(accounts, *numAccounts);
+        saveUserData(users, *numUsers);
+    }
+    else
+    {
+        printf("Customer not found.\n");
+    }
 }
 
-void sortAccounts(Account *accounts, int numAccounts) {
-    // Implement the logic to sort accounts
-    // For simplicity, let's sort by account holder name
-    for (int i = 0; i < numAccounts - 1; i++) {
-        for (int j = 0; j < numAccounts - i - 1; j++) {
-            if (strcmp(accounts[j].accountHolder, accounts[j + 1].accountHolder) > 0) {
+// Function to sort accounts (by account holder's username)
+void sortAccounts(Account *accounts, int numAccounts)
+{
+    // Use a simple bubble sort for demonstration purposes
+    for (int i = 0; i < numAccounts - 1; i++)
+    {
+        for (int j = 0; j < numAccounts - i - 1; j++)
+        {
+            if (strcmp(accounts[j].accountHolder, accounts[j + 1].accountHolder) > 0)
+            {
                 // Swap accounts
                 Account temp = accounts[j];
                 accounts[j] = accounts[j + 1];
@@ -439,4 +615,99 @@ void sortAccounts(Account *accounts, int numAccounts) {
     }
 
     printf("Accounts sorted successfully.\n");
+
+    // Save sorted data to file
+    saveAccountData(accounts, numAccounts);
+}
+
+// Function to save user data to a file
+void saveUserData(User *users, int numUsers)
+{
+    FILE *file = fopen("user.txt", "w");
+    if (file == NULL)
+    {
+        printf("Error opening file for writing.\n");
+        return;
+    }
+
+    for (int i = 0; i < numUsers; ++i)
+    {
+        fprintf(file, "Customer %d:\n First Name: %s Last Name: %s \nEmail: %s \nSSN: %s \nAddress: %s \nUsername: %s \nPassword: %s Role: %d\n",
+                i + 1, users[i].firstName, users[i].lastName, users[i].email,
+                users[i].socialSecurityNumber, users[i].address, users[i].username,
+                users[i].password, users[i].role);
+    }
+
+    fclose(file);
+    printf("User data saved successfully.\n");
+}
+
+// Function to load user data from a file
+void loadUserData(User *users, int *numUsers)
+{
+    FILE *file = fopen("user.txt", "r");
+    if (file == NULL)
+    {
+        printf("Error opening file for reading. Assuming first run.\n");
+        return;
+    }
+
+    int customerNumber;
+    while (fscanf(file, "Customer %d:\n First Name: %s Last Name: %s \nEmail: %s \nSSN: %s \nAddress: %s \nUsername: %s \nPassword: %s Role: %d",
+                  &customerNumber, users[*numUsers].firstName, users[*numUsers].lastName,
+                  users[*numUsers].email, users[*numUsers].socialSecurityNumber,
+                  users[*numUsers].address, users[*numUsers].username, users[*numUsers].password,
+                  &users[*numUsers].role) == 9)
+    {
+        (*numUsers)++;
+    }
+
+    fclose(file);
+    printf("User data loaded successfully.\n");
+}
+
+void saveAccountData(Account *accounts, int numAccounts)
+{
+    FILE *file = fopen("accountinfo.txt", "w");
+    if (file == NULL)
+    {
+        printf("Error opening file for writing.\n");
+        return;
+    }
+
+    for (int i = 0; i < numAccounts; ++i)
+    {
+        fprintf(file, "User: %s %.2f %d\n", accounts[i].accountHolder, accounts[i].balance, accounts[i].numTransactions);
+
+        for (int j = 0; j < accounts[i].numTransactions; ++j)
+        {
+            fprintf(file, "%s\n", accounts[i].transactions[j]);
+        }
+    }
+
+    fclose(file);
+    printf("Account data saved successfully.\n");
+}
+
+void loadAccountData(Account *accounts, int *numAccounts)
+{
+    FILE *file = fopen("accountinfo.txt", "r");
+    if (file == NULL)
+    {
+        printf("Error opening file for reading. Assuming first run.\n");
+        return;
+    }
+
+    while (fscanf(file, "User: %s %lf %d", accounts[*numAccounts].accountHolder,
+                  &accounts[*numAccounts].balance, &accounts[*numAccounts].numTransactions) == 3)
+    {
+        for (int i = 0; i < accounts[*numAccounts].numTransactions; ++i)
+        {
+            fscanf(file, "%s", accounts[*numAccounts].transactions[i]);
+        }
+        (*numAccounts)++;
+    }
+
+    fclose(file);
+    printf("Account data loaded successfully.\n");
 }

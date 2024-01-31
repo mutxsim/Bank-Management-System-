@@ -1,4 +1,5 @@
-# bank-management-system-in-C
+
+# bank-management-system-project
 # 
 # Objective: Develop a console-based Bank Management System in C that facilitates users to log in and manage their accounts (withdrawal/deposit) and provides an  
 # admin interface to oversee and manage customer details.
